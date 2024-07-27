@@ -32,6 +32,9 @@ importers:
       vue-echarts:
         specifier: 7.0.0-beta.0
         version: 7.0.0-beta.0(@vue/runtime-core@3.4.33)(echarts@5.5.1)(vue@3.4.33(typescript@5.5.3))
+      vue-router:
+        specifier: ^4.4.0
+        version: 4.4.0(vue@3.4.33(typescript@5.5.3))
     devDependencies:
       '@quasar/vite-plugin':
         specifier: ^1.7.0
@@ -39,6 +42,9 @@ importers:
       '@tauri-apps/cli':
         specifier: '>=2.0.0-beta.0'
         version: 2.0.0-beta.22
+      '@types/vue-router':
+        specifier: ^2.0.0
+        version: 2.0.0(vue@3.4.33(typescript@5.5.3))
       '@vitejs/plugin-vue':
         specifier: ^5.0.5
         version: 5.0.5(vite@5.3.4(sass@1.77.8))(vue@3.4.33(typescript@5.5.3))
@@ -398,6 +404,10 @@ packages:
   '@types/estree@1.0.5':
     resolution: {integrity: sha512-/kYRxGDLWzHOB7q+wtSUQlFrtcdUccpfy+X+9iMBpHK8QLLhx2wIPYuS5DYtR9Wa/YlZAbIovy7qVdB1Aq6Lyw==}
 
+  '@types/vue-router@2.0.0':
+    resolution: {integrity: sha512-E454lQ6tp9ftVWdZ8VGZpRcIV4YeqVAcx/uifl3P1GGwscYsxOFdYfgIuKasKO0Fm6Np2JM/L378D3bcRQE9hg==}
+    deprecated: This is a stub types definition for vue-router (https://github.com/vuejs/vue-router). ecmarkup provides its own type definitions, so you don\'t need @types/ecmarkup installed!
+
   '@vitejs/plugin-vue@5.0.5':
     resolution: {integrity: sha512-LOjm7XeIimLBZyzinBQ6OSm3UBCNVCpLkxGC0oWmm2YPzVZoxMsdvNVimLTBzpAnR9hl/yn1SHGuRfe6/Td9rQ==}
     engines: {node: ^18.0.0 || >=20.0.0}
@@ -425,6 +435,9 @@ packages:
 
   '@vue/compiler-ssr@3.4.33':
     resolution: {integrity: sha512-0WveC9Ai+eT/1b6LCV5IfsufBZ0HP7pSSTdDjcuW302tTEgoBw8rHVHKPbGUtzGReUFCRXbv6zQDDgucnV2WzQ==}
+
+  '@vue/devtools-api@6.6.3':
+    resolution: {integrity: sha512-0MiMsFma/HqA6g3KLKn+AGpL1kgKhFWszC9U29NfpWK5LE7bjeXxySWJrOJ77hBz+TBrBQ7o4QJqbPbqbs8rJw==}
 
   '@vue/language-core@2.0.28':
     resolution: {integrity: sha512-0z4tyCCaqqPbdyz0T4yTFQeLpCo4TOM/ZHAC3geGLHeCiFAjVbROB9PiEtrXR1AoLObqUPFHSmKZeWtEMssSqw==}
@@ -788,6 +801,11 @@ packages:
       '@vue/runtime-core':
         optional: true
 
+  vue-router@4.4.0:
+    resolution: {integrity: sha512-HB+t2p611aIZraV2aPSRNXf0Z/oLZFrlygJm+sZbdJaW6lcFqEDQwnzUBXn+DApw+/QzDU/I9TeWx9izEjTmsA==}
+    peerDependencies:
+      vue: ^3.2.0
+
   vue-template-compiler@2.7.16:
     resolution: {integrity: sha512-AYbUWAJHLGGQM7+cNTELw+KsOG9nl2CnSv467WobS5Cv9uk3wFcnr1Etsz2sEIHEZvw1U+o9mRlEO6QbZvUPGQ==}
 
@@ -1008,6 +1026,12 @@ snapshots:
 
   '@types/estree@1.0.5': {}
 
+  '@types/vue-router@2.0.0(vue@3.4.33(typescript@5.5.3))':
+    dependencies:
+      vue-router: 4.4.0(vue@3.4.33(typescript@5.5.3))
+    transitivePeerDependencies:
+      - vue
+
   '@vitejs/plugin-vue@5.0.5(vite@5.3.4(sass@1.77.8))(vue@3.4.33(typescript@5.5.3))':
     dependencies:
       vite: 5.3.4(sass@1.77.8)
@@ -1054,6 +1078,8 @@ snapshots:
     dependencies:
       '@vue/compiler-dom': 3.4.33
       '@vue/shared': 3.4.33
+
+  '@vue/devtools-api@6.6.3': {}
 
   '@vue/language-core@2.0.28(typescript@5.5.3)':
     dependencies:
@@ -1398,6 +1424,11 @@ snapshots:
       '@vue/runtime-core': 3.4.33
     transitivePeerDependencies:
       - '@vue/composition-api'
+
+  vue-router@4.4.0(vue@3.4.33(typescript@5.5.3)):
+    dependencies:
+      '@vue/devtools-api': 6.6.3
+      vue: 3.4.33(typescript@5.5.3)
 
   vue-template-compiler@2.7.16:
     dependencies:

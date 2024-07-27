@@ -1,15 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { info } from './lib.ts';
 const splitterModel = ref(20);
 const tab = ref('');
 const myInfo = ref({learned: 0, collocted: 0} as info);
 
-
-
 </script>
 
 <template>
-<q-splitter v-model="splitterModel" style="height: 250px">
+<q-splitter v-model="splitterModel" id="main">
         <template v-slot:before>
             <q-tabs v-model="tab" vertical class="text-teal">
                 <q-tab name="overview" icon="home" label="Overview" />
@@ -51,8 +50,8 @@ const myInfo = ref({learned: 0, collocted: 0} as info);
 </template>
 
 <style lang="scss">
-body{
-    backdrop-filter: blur(20px);
+#main{
+    filter: blur(10px);
 }
 #dashboard-container{
     display: flex;
