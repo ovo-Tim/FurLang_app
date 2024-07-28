@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, process::Stdio};
 
 use tokio::{io::AsyncReadExt, process::{self, Command}};
 use serde::Serialize;
@@ -22,7 +22,7 @@ impl CommandRunner{
             return Err("Failed to get server path".into());
         }
         let mut _tmp = Command::new(&exe_path);
-        let mut _cmd = _tmp.current_dir(exe_dir.unwrap());
+        let mut _cmd = _tmp.current_dir(exe_dir.unwrap()).stdout(Stdio::piped()).stderr(Stdio::piped());
         _cmd.kill_on_drop(true);
         if let Ok(cmd) = _cmd.spawn(){
             self.cmd = Some(cmd);
