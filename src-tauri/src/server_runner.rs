@@ -32,7 +32,7 @@ impl CommandRunner{
         }
     }
 
-    pub fn get_state(&mut self) -> Result<CommandState, String>{
+    pub async fn get_state(&mut self) -> Result<CommandState, String>{
         if self.cmd.is_none(){
             return Err("Failed to get state. You may not start the server yet.".into());
         }
@@ -42,14 +42,15 @@ impl CommandRunner{
         let mut err_buf = String::new();
         let mut exit_code = None;
         if let Some(output) = &mut cmd.stdout{
-            let _ = output.read_to_string(&mut out_buf);
+            let _ = output.read_to_string(&mut out_buf).await;
         }
         if let Some(output) = &mut cmd.stderr{
-            let _ = output.read_to_string(&mut err_buf);
+            let _ = output.read_to_string(&mut err_buf).await;
         }
         if let Ok(Some(code)) = cmd.try_wait(){
             exit_code = code.code();
         }
+        println!("Stdout: {}, {}", out_buf, err_buf);
         Ok(CommandState{
             stdout: out_buf,
             stderr: err_buf,

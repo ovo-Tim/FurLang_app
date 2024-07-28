@@ -53,7 +53,11 @@ fn start_server(handle: tauri::AppHandle) -> Result<(), String>{
 #[tauri::command]
 fn get_state() -> Result<server_runner::CommandState, String>{
     if let Ok(mut runner) = RUNNER.lock(){
-        Ok(runner.get_state()?)
+        let res = tokio::task::block_in_place(|| {
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            rt.block_on(runner.get_state())
+        });
+        Ok(res?)
     }else{
         Err("Failed to get state. Rust mutex is poisoned.".into())
     }
@@ -71,7 +75,7 @@ fn _run() {
 
 pub fn run(){
     tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(3)
+        .worker_threads(5)
         .enable_all()
         .build()
         .unwrap()
