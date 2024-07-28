@@ -1,20 +1,23 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Command } from '@tauri-apps/plugin-shell';
-let server_msg = ref("");
-function disp(cmd: Command<string>){
-    cmd.stdout.addListener("data", (data) => {
-        server_msg.value = data;
-    });
-    cmd.stderr.addListener("data", (data) => {
-        server_msg.value = data;
-    });
+import { invoke } from '@tauri-apps/api/core';
+import { useQuasar } from 'quasar';
+const $q = useQuasar()
 
+const server_msg = ref("");
+interface CommandState {
+    stdout: String,
+    stderr: String,
+    exit_code: number,
 }
-
-defineExpose({
-  disp
+const getting_state = setInterval(()=>{
+    invoke('get_state').then((_msg) => {
+    const msg = _msg as CommandState;
+    console.log(msg);
+    server_msg.value += msg.stdout;
+    server_msg.value += msg.stderr;
 });
+}, 500);
 </script>
 
 <template>
