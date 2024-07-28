@@ -3,23 +3,33 @@ import mainPage from './components/mainPage.vue';
 import splashscreen from './components/splashscreen.vue';
 import lib from './components/lib.ts';
 import { onMounted, ref } from 'vue';
-import { useQuasar } from 'quasar'
+import { useQuasar } from 'quasar';
+import { Command } from '@tauri-apps/plugin-shell';
 
-const qua = useQuasar();
-
-let [serverTask, taskExe] = lib.setup_server();
 const splash = ref();
+const $q = useQuasar();
 onMounted(()=>{
+  const serverTask = Command.sidecar("server/main");
   splash.value.disp(serverTask);
-});
-taskExe.then((res) => {
-  if (res.signal == 6) {
-    qua.notify({
+  const taskExe = serverTask.execute()
+  taskExe.then((res) => {
+    console.log("Code: ", res.code);
+    console.log("Stdout: ", res.stdout);
+    console.log("Stderr: ", res.stderr);
+
+    if (res.signal == 6) {
+      $q.notify({
+        type: 'negative',
+        message: "Warning! The server has crashed, signal 6.(One possible solution is to move the server to another directory that don't have special character.)"
+      });
+    }
+    $q.notify({
       type: 'negative',
-      message: "Warning! The server has crashed, signal 6.(One possible solution is to move the server to another directory that don't have special character.)"
-    })
-  }
-})
+      message: "Warning! The server has closed. Signal: " + res.signal
+    });
+  });
+});
+
 </script>
 
 <template>

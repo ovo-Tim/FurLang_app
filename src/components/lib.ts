@@ -1,18 +1,4 @@
 import axios from "axios";
-import { Command, ChildProcess } from '@tauri-apps/plugin-shell';
-
-function setup_server(): [Command<string>, Promise<ChildProcess<string>>] {
-    const sidecar_command = Command.sidecar("server/main");
-    const exe = sidecar_command.execute();
-    exe.then((s) => {
-        console.log("stdout:", s.stdout);
-        console.log("stderr:", s.stderr);
-        console.log("code:", s.code);
-        console.log("signal:", s.signal);
-    })
-    return [sidecar_command, exe];
-}
-
 
 // const axios_instance = axios.create({
 //     baseURL: "http://" + server
