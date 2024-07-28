@@ -12,13 +12,6 @@
     "resources:default",
     "menu:default",
     "tray:default",
-    "shell:allow-open",
-    {
-      "identifier": "shell:allow-execute",
-      "allow": [{
-        "name": "server/main",
-        "sidecar": true
-      }]
-    }
+    "shell:allow-open"
   ]
 }

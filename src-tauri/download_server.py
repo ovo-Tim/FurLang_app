@@ -1,5 +1,6 @@
 import platform
-import os, shutil
+import os
+import shutil
 import zipfile
 import subprocess
 import requests
@@ -36,17 +37,17 @@ match system:
 
 latest_tag = requests.get("https://api.github.com/repos/ovo-Tim/FurLang_server/releases/latest").json()['tag_name']
 url = f"https://github.com/ovo-Tim/FurLang_server/releases/download/{latest_tag}/{file_name}"
-# os.system(f"curl -LjO {url}")
+os.system(f"curl -LjO {url}")
 
-# with zipfile.ZipFile(file_name, 'r') as zip_ref:
-#     zip_ref.extractall('.')
+with zipfile.ZipFile(file_name, 'r') as zip_ref:
+    zip_ref.extractall('.')
 
-# shutil.move('./build/main.dist', '.')
-# os.removedirs('./build')
-# os.remove(file_name)
-# os.rename('./main.dist', './server')
-exe_name = f'main-{get_rustc_host()}{'' if suffix == '.bin' else suffix}'
-os.rename(f'./server/main{suffix}', f'./server/{exe_name}')
+shutil.move('./build/main.dist', '.')
+os.removedirs('./build')
+os.remove(file_name)
+os.rename('./main.dist', './server')
+# exe_name = f'main-{get_rustc_host()}{'' if suffix == '.bin' else suffix}'
+# os.rename(f'./server/main{suffix}', f'./server/{exe_name}')
 
 if system != 'Windows':
-    os.system(f'chmod +x ./server/{exe_name}')
+    os.system('chmod +x ./server/main.bin')

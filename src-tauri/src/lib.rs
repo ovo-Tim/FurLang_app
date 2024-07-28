@@ -1,4 +1,7 @@
 use serde::{Serialize, Deserialize};
+mod server_runner;
+use server_runner::CommandRunner;
+use tauri::{path::BaseDirectory, Manager};
 use std::fs;
 use directories::UserDirs;
 
@@ -23,9 +26,28 @@ fn get_config() -> Result<Config, String>{
     Err("Failed to read config file".into())
 }
 
+#[cfg(target_os = "windows")]
+static EXTENSION: &str = ".exe";
+
+#[cfg(not(target_os = "windows"))]
+static EXTENSION: &str = ".bin";
+
+fn start_server(handle: tauri::AppHandle, runner: &mut CommandRunner) -> Result<(), String>{
+    let server_path = handle.path().resolve("server/main".to_owned()+EXTENSION, BaseDirectory::Resource);
+    if server_path.is_err(){
+        return Err("Failed to get server path".into());
+    }
+    if let Some(_path) = server_path.unwrap().to_str(){
+        runner.start_server(_path.to_string())?;
+    }
+
+    Ok(())
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let mut runner = CommandRunner::default();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![get_config])
