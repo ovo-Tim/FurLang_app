@@ -22,3 +22,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+setup_dev.sh
+src-tauri/src/test.rs

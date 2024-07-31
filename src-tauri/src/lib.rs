@@ -7,6 +7,8 @@ use directories::UserDirs;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
 
+mod test;
+
 #[derive(Serialize, Deserialize)]
 struct Config {
     db_path: String,
@@ -45,6 +47,7 @@ fn start_server(handle: tauri::AppHandle) -> Result<(), String>{
         return Err("Failed to get server path".into());
     }
     let exe_path = exe_path.unwrap();
+    println!("Server path: {:?}", exe_path);
     let mut runner = RUNNER.lock().unwrap();
     runner.start_server(exe_path)?;
     Ok(())

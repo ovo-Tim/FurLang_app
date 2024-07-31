@@ -1,28 +1,52 @@
 <script setup lang="ts">
 import mainPage from './components/mainPage.vue';
 import splashscreen from './components/splashscreen.vue';
-import lib from './components/lib.ts';
-import { onMounted, ref } from 'vue';
-import { useQuasar } from 'quasar';
-import { invoke } from '@tauri-apps/api/core';
+import { start_server, sharedVars } from './components/lib.ts';
+import { onMounted, ref, watch } from 'vue';
+import anime from 'animejs';
 
-const $q = useQuasar();
-const splash = ref();
-invoke('start_server').catch((err) => {
-  $q.notify({
-    type: 'negative',
-    message: err
-  })
-});
+start_server();
+
+onMounted(() => {
+    const time = 2500;
+    const loadingPage = document.getElementById('loadingPage');
+    const mainPage = document.getElementById('mainPage');
+
+    watch(() => sharedVars.server_inited, (_) => {
+      anime({
+        duration: time,
+        direction: 'reverse',
+        easings: 'easeInQuint',
+        update: (anim) => {
+          mainPage!.style.filter = `blur(${anim.progress * 16}px)`;
+        }
+      });
+
+      anime({
+        duration: time-300,
+        easings: 'easeInQuint',
+        update: (anim) => {
+          console.log(anim.progress);
+          loadingPage!.style.filter = `opacity(${anim.progress})`;
+        },
+        complete: () => {
+          loadingPage!.remove();
+        }
+      })
+    })
+})
 
 </script>
 
 <template>
-<splashscreen id="loadingPage" ref="splash" />
-<mainPage id="main" />
+<splashscreen id="loadingPage"/>
+<mainPage id="mainPage" />
 </template>
 
 <style>
+#mainPage{
+  filter: blur(16px);
+}
 #loadingPage{
   z-index: 1000;
   top: 0;

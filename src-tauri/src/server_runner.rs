@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use std::process::Stdio;
 use anyhow::anyhow;
-use tokio::{io::{AsyncBufReadExt, AsyncRead}, process::{Child, Command}};
+use tokio::{io::{AsyncBufReadExt, AsyncRead, BufReader}, process::{Child, Command}};
 use serde::Serialize;
 use std::sync::{Arc, mpsc};
 
@@ -39,19 +39,29 @@ impl CommandRunner{
         let mut cmd = Command::new(&exe_path);
         cmd.current_dir(exe_dir.unwrap()).stdout(Stdio::piped()).stderr(Stdio::piped());
         cmd.kill_on_drop(true);
-        if let Ok(child) = cmd.spawn(){
-            Ok((cmd, child))
-        }else{
-            Err(anyhow!("Failed to start server"))
+        match cmd.spawn() {
+            Ok(child) => Ok((cmd, child)),
+            Err(e) => {
+                println!("Failed to start server: {}", e);
+                Err(anyhow!("Failed to start server"))
+            }
         }
     }
 
-    async fn readline(stdout: &mut (impl AsyncRead + Unpin + 'static)) -> anyhow::Result<String>{
+    async fn read_and_send<T:AsyncRead + Unpin>(reader: &mut BufReader<T>, tx: &mpsc::Sender<String>, sleep: bool) -> anyhow::Result<()> {
+        println!("read_and_send");
         let mut buf = String::new();
-        let reader = tokio::io::BufReader::new(stdout);
-        let mut pinned_reader = Box::pin(reader);
-        pinned_reader.read_line(&mut buf).await?;
-        Ok(buf)
+        reader.read_line(&mut buf).await?;
+        println!("Server: {}", buf);
+        if buf.is_empty(){ // read_line won't block if there is nothing to read, instead it returns empty string.
+            if sleep{
+                println!("sleep");
+                tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+            }
+            return Ok(());
+        }
+        tx.send(buf).unwrap();
+        Ok(())
     }
 
     fn check_status(child: &mut Child, exited: &Arc<AtomicBool>, exit_code: &Arc<AtomicI32>){
@@ -64,18 +74,18 @@ impl CommandRunner{
     }
 
     async fn state_watch(mut child: Child, tx: mpsc::Sender<String>, exited: Arc<AtomicBool>, exit_code: Arc<AtomicI32>){
-        let mut stdout = child.stdout.take().unwrap();
-        let mut stderr = child.stderr.take().unwrap();
+        let mut stdout = tokio::io::BufReader::new(child.stdout.take().unwrap());
+        let mut stderr = tokio::io::BufReader::new(child.stderr.take().unwrap());
         loop{
-            if let Ok(buf) = CommandRunner::readline(&mut stderr).await{
-                tx.send(buf).unwrap();
-            }
-            match CommandRunner::readline(&mut stdout).await{
-                Ok(buf) => {
-                    tx.send(buf).unwrap();
+            let _ = CommandRunner::read_and_send(&mut stderr, &tx, false).await;
+            match CommandRunner::read_and_send(&mut stdout, &tx, true).await{
+                Ok(_) => {
                     continue;
                 },
-                Err(_) => CommandRunner::check_status(&mut child, &exited, &exit_code)
+                Err(e) => {
+                    println!("Failed to read server output: {}", e);
+                    CommandRunner::check_status(&mut child, &exited, &exit_code);
+                }
             }
             break;
         }
