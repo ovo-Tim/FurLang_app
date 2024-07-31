@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { learning_info } from './lib.ts';
 import dashboard from './dashboard.vue';
 const splitterModel = ref(20);
-const tab = ref('');
+const tab = ref('overview');
 
 </script>
 

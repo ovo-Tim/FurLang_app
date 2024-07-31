@@ -7,8 +7,6 @@ use directories::UserDirs;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
 
-mod test;
-
 #[derive(Serialize, Deserialize)]
 struct Config {
     db_path: String,
@@ -49,17 +47,14 @@ fn start_server(handle: tauri::AppHandle) -> Result<(), String>{
     let exe_path = exe_path.unwrap();
     println!("Server path: {:?}", exe_path);
     let mut runner = RUNNER.lock().unwrap();
-    runner.start_server(exe_path)?;
+    runner.start_server(exe_path, None)?;
     Ok(())
 }
 
 #[tauri::command]
 fn get_state() -> Result<server_runner::CommandState, String>{
     if let Ok(mut runner) = RUNNER.lock(){
-        let res = tokio::task::block_in_place(|| {
-            let rt = tokio::runtime::Runtime::new().unwrap();
-            rt.block_on(runner.get_state())
-        });
+        let res = runner.get_state();
         Ok(res?)
     }else{
         Err("Failed to get state. Rust mutex is poisoned.".into())

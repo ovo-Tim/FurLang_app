@@ -18,7 +18,7 @@ export const sharedVars = reactive({
     config: {} as FurConf,
     conf_inited: false,
     axios_instance: undefined as Axios | undefined,
-    learningInfo: {} as LearningInfo,
+    learningInfo: {learned: 0, collocted: 0} as LearningInfo,
 })
 
 export interface LearningInfo{
@@ -73,7 +73,11 @@ export async function FurPost(type: string, data: any){
         const res = (await sharedVars.axios_instance!.post("", msg)).data;
         return res;
     }catch(e){
-        console.log("Post error: ", e)
+        console.log("Post error: ", e);
+        $q.notify({
+            type: 'negative',
+            message: "Request failed:" + e
+        })
         return e;
     }
 }

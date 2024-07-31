@@ -1,5 +1,12 @@
 <script setup>
-import { sharedVars } from './lib';
+import { FurPost, sharedVars } from './lib';
+
+function init(){
+    FurPost("learned_count", {}).then((res) => {
+        sharedVars.learningInfo.learned = res.data[0];
+        sharedVars.learningInfo.collocted = res.data[1];
+    })
+}
 </script>
 <template>
 <q-card>
@@ -18,7 +25,7 @@ import { sharedVars } from './lib';
                 </q-card-section>
             </q-card>
 
-            <q-card bordered class="my-card dashboard-unit">
+            <q-card style="flex-basis: 21em;" bordered class="my-card dashboard-unit">
                 <q-card-section>
 
                 </q-card-section>
@@ -34,7 +41,7 @@ import { sharedVars } from './lib';
     justify-content: center;
 }
 .dashboard-unit{
-    flex: 0 1 21em;
+    flex: 1 1 18em;
     margin: 0.5rem;
 }
 .db-text{

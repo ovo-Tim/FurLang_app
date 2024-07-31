@@ -18,21 +18,21 @@ onMounted(() => {
         direction: 'reverse',
         easings: 'easeInQuint',
         update: (anim) => {
-          mainPage!.style.filter = `blur(${anim.progress * 16}px)`;
+          mainPage!.style.filter = `blur(${(anim.progress * 13)*0.01}px)`;
         }
       });
 
       anime({
         duration: time-300,
         easings: 'easeInQuint',
+        direction: 'reverse',
         update: (anim) => {
-          console.log(anim.progress);
-          loadingPage!.style.filter = `opacity(${anim.progress})`;
+          loadingPage!.style.filter = `opacity(${anim.progress}%)`;
         },
         complete: () => {
           loadingPage!.remove();
         }
-      })
+      });
     })
 })
 
@@ -45,7 +45,7 @@ onMounted(() => {
 
 <style>
 #mainPage{
-  filter: blur(16px);
+  filter: blur(13px);
 }
 #loadingPage{
   z-index: 1000;

@@ -31,7 +31,7 @@ impl CommandRunner{
         }
     }
 
-    fn create(exe_path: PathBuf) -> anyhow::Result<(Command, Child)>{
+    fn create(exe_path: PathBuf, arg: Option<String>) -> anyhow::Result<(Command, Child)>{
         let exe_dir = exe_path.parent();
         if exe_dir.is_none(){
             return Err(anyhow!("Failed to get server path"));
@@ -39,8 +39,14 @@ impl CommandRunner{
         let mut cmd = Command::new(&exe_path);
         cmd.current_dir(exe_dir.unwrap()).stdout(Stdio::piped()).stderr(Stdio::piped());
         cmd.kill_on_drop(true);
+        if let Some(_arg) = arg{
+            cmd.arg(_arg);
+        }
         match cmd.spawn() {
-            Ok(child) => Ok((cmd, child)),
+            Ok(child) => {
+                println!("Created {} at {}", exe_path.display(), exe_dir.unwrap().display());
+                Ok((cmd, child))
+            },
             Err(e) => {
                 println!("Failed to start server: {}", e);
                 Err(anyhow!("Failed to start server"))
@@ -48,58 +54,56 @@ impl CommandRunner{
         }
     }
 
-    async fn read_and_send<T:AsyncRead + Unpin>(reader: &mut BufReader<T>, tx: &mpsc::Sender<String>, sleep: bool) -> anyhow::Result<()> {
-        println!("read_and_send");
+    async fn read_and_send<T:AsyncRead + Unpin>(reader: &mut BufReader<T>, tx: &mpsc::Sender<String>) -> anyhow::Result<()> {
+        // println!("read_and_send");
         let mut buf = String::new();
         reader.read_line(&mut buf).await?;
-        println!("Server: {}", buf);
-        if buf.is_empty(){ // read_line won't block if there is nothing to read, instead it returns empty string.
-            if sleep{
-                println!("sleep");
-                tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
-            }
-            return Ok(());
+        if buf.is_empty(){
+            tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+            return Err(anyhow!("Stdout has closed and there is nothing to read"));
         }
+        println!("Server: {}", buf);
         tx.send(buf).unwrap();
         Ok(())
     }
 
-    fn check_status(child: &mut Child, exited: &Arc<AtomicBool>, exit_code: &Arc<AtomicI32>){
+    async fn check_status(child: &mut Child, exited: &Arc<AtomicBool>, exit_code: &Arc<AtomicI32>, tx: &mpsc::Sender<String>){
+        println!("check_status");
         if let Ok(Some(exit_status)) = child.try_wait(){
-            exited.store(true, Ordering::Relaxed);
+            exited.store(true,  Ordering::Relaxed);
             if let Some(code) = exit_status.code(){
                 exit_code.store(code, Ordering::Relaxed);
             }
         }
+        let mut stderr = tokio::io::BufReader::new(child.stderr.take().unwrap());
+        let _ = CommandRunner::read_and_send(&mut stderr, tx).await;
     }
 
     async fn state_watch(mut child: Child, tx: mpsc::Sender<String>, exited: Arc<AtomicBool>, exit_code: Arc<AtomicI32>){
         let mut stdout = tokio::io::BufReader::new(child.stdout.take().unwrap());
-        let mut stderr = tokio::io::BufReader::new(child.stderr.take().unwrap());
         loop{
-            let _ = CommandRunner::read_and_send(&mut stderr, &tx, false).await;
-            match CommandRunner::read_and_send(&mut stdout, &tx, true).await{
+            match CommandRunner::read_and_send(&mut stdout, &tx).await{
                 Ok(_) => {
                     continue;
                 },
                 Err(e) => {
                     println!("Failed to read server output: {}", e);
-                    CommandRunner::check_status(&mut child, &exited, &exit_code);
+                    CommandRunner::check_status(&mut child, &exited, &exit_code, &tx).await;
                 }
             }
             break;
         }
     }
 
-    pub fn start_server(&mut self, exe_path: PathBuf) -> Result<(), String>{
-        if let Ok((_, child)) = Self::create(exe_path.clone()){
+    pub fn start_server(&mut self, exe_path: PathBuf, arg: Option<String>) -> Result<(), String>{
+        if let Ok((_, child)) = Self::create(exe_path.clone(), arg){
             tokio::spawn(Self::state_watch(child, self.tx.clone(), self.exited.clone(), self.exit_code.clone()));
             return Ok(());
         }
         Err("Failed to start server".into())
     }
 
-    pub async fn get_state(&mut self) -> Result<CommandState, String>{
+    pub fn get_state(&mut self) -> Result<CommandState, String>{
         let mut out_buf = String::new();
         let mut exit_code = None;
         if self.exited.load(Ordering::Relaxed){
@@ -114,6 +118,7 @@ impl CommandRunner{
             }
             break;
         }
+        // println!("Server: {}", &out_buf);
 
         Ok(CommandState{
             stdout: out_buf,
