@@ -779,6 +779,7 @@ dependencies = [
 name = "furlang-app"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "directories",
  "lazy_static",
  "once_cell",

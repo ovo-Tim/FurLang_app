@@ -35,7 +35,7 @@ static EXTENSION: &str = ".exe";
 static EXTENSION: &str = ".bin";
 
 lazy_static!{
-    static ref RUNNER:Mutex<CommandRunner> = Mutex::new(CommandRunner::default());
+    static ref RUNNER:Mutex<CommandRunner> = Mutex::new(CommandRunner::new());
 }
 
 #[tauri::command]
