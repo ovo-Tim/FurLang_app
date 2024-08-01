@@ -45,16 +45,25 @@ export function start_server(){
         })
     });
     setInterval(()=>{
-        invoke('get_state').then((_msg) => {
-            const msg = _msg as CommandState;
-            console.log(msg);
-            sharedVars.server_msg += msg.stdout;
-            if (msg.stdout.includes('Start service')){
-                sharedVars.server_inited = true;
-                get_conf();
-            }
-        });
+        get_state();
     }, 500);
+}
+
+function get_state(){
+    invoke('get_state').then((_msg) => {
+        const msg = _msg as CommandState;
+        sharedVars.server_msg += msg.stdout;
+        if (msg.stdout.includes('Start service')){
+            sharedVars.server_inited = true;
+            get_conf();
+        }else if (msg.exit_code != -1){
+            sharedVars.server_inited = false;
+            $q.notify({
+                type: 'negative',
+                message: "The server has stoped! Exit code: " + msg.exit_code
+            })
+        }
+    });
 }
 
 function get_conf(){

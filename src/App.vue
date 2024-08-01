@@ -8,31 +8,44 @@ import anime from 'animejs';
 start_server();
 
 onMounted(() => {
-    const time = 2500;
     const loadingPage = document.getElementById('loadingPage');
     const mainPage = document.getElementById('mainPage');
+    let played = false;
+    let beginAnimation = anime.timeline({
+      easings: 'easeInQuint',
+      duration: 2500,
+      autoplay: false,
+      direction: 'reverse',
+    });
 
-    watch(() => sharedVars.server_inited, (_) => {
-      anime({
-        duration: time,
-        direction: 'reverse',
-        easings: 'easeInQuint',
+    beginAnimation.add({
         update: (anim) => {
           mainPage!.style.filter = `blur(${(anim.progress * 13)*0.01}px)`;
+          if (played && !sharedVars.server_inited){  // If the server has stoped, reopen the splashscreen
+            // beginAnimation.reverse();
+            played = false;
+          }
         }
       });
 
-      anime({
-        duration: time-300,
-        easings: 'easeInQuint',
-        direction: 'reverse',
+      beginAnimation.add({
+
         update: (anim) => {
-          loadingPage!.style.filter = `opacity(${anim.progress}%)`;
+          console.log(anim.progress);
+
+          loadingPage!.style.filter = `opacity(${ anim.progress }%)`;
         },
         complete: () => {
           loadingPage!.remove();
         }
       });
+
+    watch(() => sharedVars.server_inited, (_) => {
+      if (sharedVars.server_inited){
+        beginAnimation.play();
+        played = true;
+      }
+
     })
 })
 

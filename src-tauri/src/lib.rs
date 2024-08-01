@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 mod server_runner;
 use server_runner::CommandRunner;
 use tauri::{path::BaseDirectory, Manager};
-use std::fs;
+use std::{error::Error, fs};
 use directories::UserDirs;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
@@ -61,12 +61,23 @@ fn get_state() -> Result<server_runner::CommandState, String>{
     }
 }
 
+fn setup(app: &mut tauri::App) -> Result<(), Box<dyn Error>> {
+    let main_window = app.get_webview_window("main").unwrap();
+    main_window.on_window_event(|event| {
+        if let tauri::WindowEvent::CloseRequested { .. } = event {
+            RUNNER.lock().unwrap().kill();
+        }
+    });
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 fn _run() {
     tauri::async_runtime::set(tokio::runtime::Handle::current());
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![get_config, start_server, get_state])
+        .setup(setup)
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

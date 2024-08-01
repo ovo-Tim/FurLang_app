@@ -5,6 +5,7 @@ use anyhow::anyhow;
 use tokio::{io::{AsyncBufReadExt, AsyncRead, BufReader}, process::{Child, Command}};
 use serde::Serialize;
 use std::sync::{Arc, mpsc};
+use tokio::sync::Mutex;
 
 #[derive(Serialize)]
 pub struct CommandState {
@@ -14,24 +15,24 @@ pub struct CommandState {
 
 
 pub struct CommandRunner{
-    exited: Arc<AtomicBool>,
     exit_code: Arc<AtomicI32>,
-    rx: mpsc::Receiver<String>,
-    tx: mpsc::Sender<String>,
+    output_rx: mpsc::Receiver<String>,
+    output_tx: mpsc::Sender<String>,
+    kill: Arc<AtomicBool>,
 }
 
 impl CommandRunner{
     pub fn new() -> Self{
         let (stdout_tx, stdout_rx) = mpsc::channel();
         Self{
-            exited: Arc::new(AtomicBool::new(false)),
             exit_code: Arc::new(AtomicI32::new(-1)),
-            rx: stdout_rx,
-            tx: stdout_tx,
+            output_rx: stdout_rx,
+            output_tx: stdout_tx,
+            kill: Arc::new(AtomicBool::new(false)),
         }
     }
 
-    fn create(exe_path: PathBuf, arg: Option<String>) -> anyhow::Result<(Command, Child)>{
+    fn exec_cmd(exe_path: PathBuf, arg: Option<String>) -> anyhow::Result<(Command, Child)>{
         let exe_dir = exe_path.parent();
         if exe_dir.is_none(){
             return Err(anyhow!("Failed to get server path"));
@@ -55,68 +56,95 @@ impl CommandRunner{
     }
 
     async fn read_and_send<T:AsyncRead + Unpin>(reader: &mut BufReader<T>, tx: &mpsc::Sender<String>) -> anyhow::Result<()> {
-        // println!("read_and_send");
-        let mut buf = String::new();
-        reader.read_line(&mut buf).await?;
-        if buf.is_empty(){
-            tokio::time::sleep(std::time::Duration::from_millis(200)).await;
-            return Err(anyhow!("Stdout has closed and there is nothing to read"));
+        let mut empty_count = 0;
+        loop {
+            let mut buf = String::new();
+            reader.read_line(&mut buf).await?;
+            if buf.is_empty(){
+                empty_count += 1;
+                if empty_count > 5{
+                    return Err(anyhow!("Empty output"));
+                }
+                continue;
+            }
+            println!("Server: {}", buf);
+            tx.send(buf)?;
+            empty_count = 0;
         }
-        println!("Server: {}", buf);
-        tx.send(buf).unwrap();
-        Ok(())
     }
 
-    async fn check_status(child: &mut Child, exited: &Arc<AtomicBool>, exit_code: &Arc<AtomicI32>, tx: &mpsc::Sender<String>){
+    async fn check_status(child: Arc<Mutex<Child>>, exit_code: &Arc<AtomicI32>) -> bool{
+        // Check if the child process has exited and write the exit code to the exit_code variable.
+        let mut child = child.lock().await;
         println!("check_status");
         if let Ok(Some(exit_status)) = child.try_wait(){
-            exited.store(true,  Ordering::Relaxed);
             if let Some(code) = exit_status.code(){
+                println!("Exit code wrote: {}", code);
                 exit_code.store(code, Ordering::Relaxed);
+                return true;
             }
         }
-        let mut stderr = tokio::io::BufReader::new(child.stderr.take().unwrap());
-        let _ = CommandRunner::read_and_send(&mut stderr, tx).await;
+        return false;
     }
 
-    async fn state_watch(mut child: Child, tx: mpsc::Sender<String>, exited: Arc<AtomicBool>, exit_code: Arc<AtomicI32>){
-        let mut stdout = tokio::io::BufReader::new(child.stdout.take().unwrap());
+    async fn wait_for_ctrlc(kill: Arc<AtomicBool>){
+        if let Ok(_) = tokio::signal::ctrl_c().await{
+            kill.store(true, Ordering::Relaxed);
+        }
+    }
+
+    async fn wait_for_kill(child: Arc<Mutex<Child>>, kill: Arc<AtomicBool>){
+        tokio::spawn(CommandRunner::wait_for_ctrlc(kill.clone()));
         loop{
-            match CommandRunner::read_and_send(&mut stdout, &tx).await{
-                Ok(_) => {
-                    continue;
-                },
-                Err(e) => {
-                    println!("Failed to read server output: {}", e);
-                    CommandRunner::check_status(&mut child, &exited, &exit_code, &tx).await;
+            if kill.load(Ordering::Relaxed){
+                let _ = child.lock().await.kill().await;
+                println!("Server killed");
+                return;
+            }
+            tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+        }
+    }
+
+    async fn state_watch(mut child: Child, tx: mpsc::Sender<String>, exit_code: Arc<AtomicI32>, kill: Arc<AtomicBool>){
+        let mut stdout_reader = tokio::io::BufReader::new(child.stdout.take().unwrap());
+        let mut stderr_reader = tokio::io::BufReader::new(child.stderr.take().unwrap());
+        let mut err_count = 0;
+        let child = Arc::new(Mutex::new(child));
+        tokio::spawn(CommandRunner::wait_for_kill(child.clone(), kill.clone()));
+        while err_count < 5{
+            if let Err(e) = CommandRunner::read_and_send(&mut stdout_reader, &tx).await{
+                println!("Failed to read server output: {}", e);
+                if kill.load(Ordering::Relaxed){
+                    return;
+                }
+                if CommandRunner::check_status(child.clone(), &exit_code).await{
+                    break;
                 }
             }
-            break;
+            err_count += 1;
         }
+        println!("State watch exit");
+        let _ = CommandRunner::read_and_send(&mut stderr_reader, &tx).await;
+        CommandRunner::check_status(child.clone(), &exit_code).await;
     }
 
     pub fn start_server(&mut self, exe_path: PathBuf, arg: Option<String>) -> Result<(), String>{
-        if let Ok((_, child)) = Self::create(exe_path.clone(), arg){
-            tokio::spawn(Self::state_watch(child, self.tx.clone(), self.exited.clone(), self.exit_code.clone()));
+        if let Ok((_, child)) = Self::exec_cmd(exe_path.clone(), arg){
+            tokio::spawn(Self::state_watch(child, self.output_tx.clone(), self.exit_code.clone(), self.kill.clone()));
             return Ok(());
         }
-        Err("Failed to start server".into())
+        Err("Failed to start server".to_string())
     }
 
     pub fn get_state(&mut self) -> Result<CommandState, String>{
         let mut out_buf = String::new();
-        let mut exit_code = None;
-        if self.exited.load(Ordering::Relaxed){
-            exit_code = Some(self.exit_code.load(Ordering::Relaxed));
-        }
+        let exit_code = Some(self.exit_code.load(Ordering::Relaxed));
+
         loop{
-            if let Ok(stdout) = self.rx.try_recv(){
-                if !stdout.is_empty(){
-                    out_buf.push_str(&stdout);
-                    continue; // Only recviving can make the loop alive, empty value or Err will break the loop.
-                }
+            match self.output_rx.try_recv(){
+                Ok(msg) => out_buf.push_str(&msg),
+                Err(_) => break,
             }
-            break;
         }
         // println!("Server: {}", &out_buf);
 
@@ -124,5 +152,9 @@ impl CommandRunner{
             stdout: out_buf,
             exit_code
         })
+    }
+
+    pub fn kill(&mut self){
+        self.kill.store(true, Ordering::Relaxed);
     }
 }
