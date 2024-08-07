@@ -12,20 +12,26 @@ struct Config {
     db_path: String,
     excluded_words_path: String,
     statistic_path: String,
-    port: u8,
+    port: u32,
     dicts_path: String,
 }
 
 #[tauri::command]
 fn get_config() -> Result<Config, String>{
     let user_dirs = UserDirs::new().unwrap();
-    let config_path = user_dirs.home_dir().join("config.json");
-    if let Ok(data) = fs::read_to_string(config_path) {
-        if let Ok(conf) = serde_json::from_str(&data) {
-            return Ok(conf);
-        }
-    }
-    Err("Failed to read config file".into())
+    let config_path = user_dirs.home_dir().join(".furlang/config.json");
+    println!("Config path: {:?}", config_path);
+
+    let file = match fs::read_to_string(config_path) {
+        Ok(data) => data,
+        Err(_) => return Err("Failed to read config file".into()),
+    };
+
+    let conf: Config = match serde_json::from_str(&file) {
+        Ok(conf) => conf,
+        Err(e) => return Err("Failed to parse config file: ".to_string()+&e.to_string()),
+    };
+    Ok(conf)
 }
 
 #[cfg(target_os = "windows")]
@@ -68,6 +74,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn Error>> {
             RUNNER.lock().unwrap().kill();
         }
     });
+    // main_window.set_shadow(true);
     Ok(())
 }
 

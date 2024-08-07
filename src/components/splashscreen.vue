@@ -11,7 +11,7 @@ onMounted(() => {
         easing: 'easeInOutBounce',
         targets: '#server-icon',
     })
-})
+});
 </script>
 
 <template>
@@ -21,7 +21,7 @@ onMounted(() => {
         <img id="server-icon" style="width: 5em;" src="../assets/server.svg"/>
         <p style="font-size: 1.8em;margin: 0 0.8em;">Server loading...</p>
     </div>
-    <q-input standout v-model="sharedVars.server_msg" readonly type="textarea" rounded style="width: 70%; margin: 0 auto;"/>
+    <q-input standout readonly type="textarea" rounded style="width: 70%; margin: 0 auto;" v-model="sharedVars.server_msg"/>
 </div>
 </template>
 

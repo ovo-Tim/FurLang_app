@@ -1,12 +1,15 @@
 <script setup>
 import { FurPost, sharedVars } from './lib';
 
-function init(){
-    FurPost("learned_count", {}).then((res) => {
-        sharedVars.learningInfo.learned = res.data[0];
-        sharedVars.learningInfo.collocted = res.data[1];
-    })
+async function init(){
+    const res = await FurPost("learned_count", {});
+    sharedVars.learningInfo.learned = res[0];
+    sharedVars.learningInfo.collocted = res[1];
+    console.log("dashboard init");
 }
+defineExpose({
+    init: init
+});
 </script>
 <template>
 <q-card>

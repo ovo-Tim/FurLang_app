@@ -17,35 +17,63 @@ struct Cmd {
     exit_code: Arc<AtomicI32>,
     output_tx: mpsc::Sender<String>,
     child: Arc<Mutex<Child>>,
-    kill: Arc<AtomicBool>,
-    killed: Arc<AtomicBool>,
+    to_kill: Arc<AtomicBool>,
+    dead: Arc<AtomicBool>,
 }
 
 impl Cmd {
-    fn new(output_tx: mpsc::Sender<String>, exe_path: PathBuf, arg: Option<String>, exit_code: Arc<AtomicI32>, kill: Arc<AtomicBool>, killed: Arc<AtomicBool>) -> anyhow::Result<Self>{
+    fn new(output_tx: mpsc::Sender<String>, exe_path: PathBuf, arg: Option<String>, exit_code: Arc<AtomicI32>, kill: Arc<AtomicBool>, dead: Arc<AtomicBool>) -> anyhow::Result<Self>{
         let (_, child) = Self::exec_cmd(exe_path, arg)?;
 
         Ok(Self {
             exit_code,
             output_tx,
             child: Arc::new(Mutex::new(child)),
-            kill,
-            killed,
+            to_kill: kill,
+            dead,
         })
     }
-    async fn wait_for_ctrlc(kill: Arc<AtomicBool>){
+    async fn wait_for_ctrlc(to_kill: Arc<AtomicBool>){
         if let Ok(_) = tokio::signal::ctrl_c().await{
-            kill.store(true, Ordering::Relaxed);
+            to_kill.store(true, Ordering::Relaxed);
         }
     }
 
-    async fn wait_for_kill(kill: Arc<AtomicBool>, killed: Arc<AtomicBool>, child: Arc<Mutex<Child>>){
-        tokio::spawn(Cmd::wait_for_ctrlc(kill.clone()));
+    async fn wait_for_kill(to_kill: Arc<AtomicBool>, dead: Arc<AtomicBool>, child: Arc<Mutex<Child>>){
+        tokio::spawn(Cmd::wait_for_ctrlc(to_kill.clone()));
         loop{
-            if kill.load(Ordering::Relaxed){
-                let _ = child.lock().await.kill().await;
+            if dead.load(Ordering::Relaxed){
+                return;
+            }
+            if to_kill.load(Ordering::Relaxed){
+                let pid = child.lock().await.id().unwrap() as i32;
+                let mut done = false;
+                println!("Killing by send SIGKILL to {}", pid);
+                #[cfg(windows)]
+                {
+                    use windows::Win32::System::Console::{GenerateConsoleCtrlEvent, CTRL_C_EVENT};
+                    unsafe {
+                        if let Ok(_) = GenerateConsoleCtrlEvent(CTRL_C_EVENT, pid){
+                            done = true;
+                        }
+                    }
+                }
+
+                #[cfg(unix)]
+                {
+                    use nix::sys::signal::{kill, Signal};
+                    use nix::unistd::Pid;
+                    if let Ok(_) = kill(Pid::from_raw(pid), Signal::SIGKILL){
+                        done = true;
+                    }
+                }
+
+                if !done{
+                    println!("Force killing server process");
+                    child.lock().await.kill().await.unwrap();
+                }
                 println!("Server killed");
-                killed.store(true, Ordering::Relaxed);
+                dead.store(true, Ordering::Relaxed);
                 return;
             }
             tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
@@ -75,12 +103,12 @@ impl Cmd {
         let mut stdout_reader = tokio::io::BufReader::new(child.stdout.take().unwrap());
         let mut stderr_reader = tokio::io::BufReader::new(child.stderr.take().unwrap());
         let mut err_count = 0;
-        tokio::spawn(Cmd::wait_for_kill(self.kill.clone(), self.killed.clone(), self.child.clone()));
+        tokio::spawn(Cmd::wait_for_kill(self.to_kill.clone(), self.dead.clone(), self.child.clone()));
         drop(child);
         while err_count < 5{
             if let Err(e) = self.read_and_send(&mut stdout_reader).await{
                 println!("Failed to read server output: {}", e);
-                if self.kill.load(Ordering::Relaxed){
+                if self.to_kill.load(Ordering::Relaxed){
                     return;
                 }
                 if self.check_status().await{
@@ -102,6 +130,7 @@ impl Cmd {
             if let Some(code) = exit_status.code(){
                 println!("Exit code wrote: {}", code);
                 self.exit_code.store(code, Ordering::Relaxed);
+                self.dead.store(true, Ordering::Relaxed);
                 return true;
             }
         }
@@ -114,7 +143,7 @@ impl Cmd {
             return Err(anyhow!("Failed to get server path"));
         }
         let mut cmd = Command::new(&exe_path);
-        cmd.current_dir(exe_dir.unwrap()).stdout(Stdio::piped()).stderr(Stdio::piped());
+        cmd.current_dir(exe_dir.unwrap()).stdout(Stdio::piped()).stderr(Stdio::piped()).stdin(Stdio::piped());
         cmd.kill_on_drop(true);
         if let Some(_arg) = arg{
             cmd.arg(_arg);
@@ -134,44 +163,35 @@ impl Cmd {
 
 pub struct CommandRunner{
     output_rx: Option<mpsc::Receiver<String>>,
-    cmd: Option<Arc<Mutex<Cmd>>>,
     exit_code: Arc<AtomicI32>,
     kill: Arc<AtomicBool>,
-    killed: Arc<AtomicBool>,
+    dead: Arc<AtomicBool>,
 }
 
 impl CommandRunner{
     pub fn new() -> Self{
         Self{
             output_rx: None,
-            cmd: None,
             exit_code: Arc::new(AtomicI32::new(-1)),
             kill: Arc::new(AtomicBool::new(false)),
-            killed: Arc::new(AtomicBool::new(false)),
+            dead: Arc::new(AtomicBool::new(false)),
         }
     }
 
     pub fn start_server(&mut self, exe_path: PathBuf, arg: Option<String>) -> Result<(), String>{
         let (tx, rx) = mpsc::channel();
         self.output_rx = Some(rx);
-        let cmd = match Cmd::new(tx, exe_path, arg, self.exit_code.clone(),self.kill.clone(), self.killed.clone()) {
+        let mut cmd = match Cmd::new(tx, exe_path, arg, self.exit_code.clone(),self.kill.clone(), self.dead.clone()) {
             Ok(cmd) => cmd,
             Err(e) => return Err(e.to_string())
         };
-            self.cmd = Some(Arc::new(Mutex::new(cmd)));
-            let tmp = Arc::clone(self.cmd.as_mut().unwrap());
-            tokio::spawn(async move {
-                let mut tmp = tmp.try_lock();
-                let cmd = tmp.as_mut().unwrap();
-                cmd.state_watch().await;
-            });
-        Err("Failed to start server".to_string())
+        tokio::spawn(async move {
+            cmd.state_watch().await;
+        });
+        Ok(())
     }
 
     pub fn get_state(&mut self) -> Result<CommandState, String>{
-        if self.cmd.is_none(){
-            return Err("Server not started".to_string());
-        }
         let mut out_buf = String::new();
         let exit_code = self.exit_code.load(Ordering::Relaxed);
 
@@ -191,7 +211,7 @@ impl CommandRunner{
 
     pub fn kill(&mut self){
         self.kill.store(true, Ordering::Relaxed);
-        while !self.killed.load(Ordering::Relaxed){
+        while !self.dead.load(Ordering::Relaxed){
             std::thread::sleep(std::time::Duration::from_millis(100));
         }
     }

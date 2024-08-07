@@ -4,6 +4,16 @@ import dashboard from './dashboard.vue';
 const splitterModel = ref(20);
 const tab = ref('overview');
 
+const _dashboard = ref();
+function init(){
+    console.log("mainPage init");
+
+    _dashboard.value.init();
+}
+defineExpose({
+    init: init
+});
+
 </script>
 
 <template>
@@ -18,7 +28,7 @@ const tab = ref('overview');
         <template v-slot:after>
             <q-tab-panels v-model="tab" animated swipeable vertical transition-prev="jump-up" transition-next="jump-up">
                 <q-tab-panel name="overview">
-                    <dashboard />
+                    <dashboard ref="_dashboard"/>
                 </q-tab-panel>
             </q-tab-panels>
         </template>
