@@ -1,15 +1,50 @@
 <script setup>
+import { provide, ref, onMounted     } from 'vue';
 import { FurPost, sharedVars } from './lib';
+import { use } from "echarts/core";
+import {
+  TitleComponent,
+  ToolboxComponent,
+  TooltipComponent,
+  GridComponent,
+  LegendComponent
+} from 'echarts/components';
+import { LineChart } from 'echarts/charts';
+import { UniversalTransition } from 'echarts/features';
+import { CanvasRenderer } from 'echarts/renderers';
+import { generateGradientStackedAreaChartOptionFromStatistic } from './charts';
+import VChart, { THEME_KEY } from "vue-echarts";
 
 async function init(){
     const res = await FurPost("learned_count", {});
     sharedVars.learningInfo.learned = res[0];
     sharedVars.learningInfo.collocted = res[1];
+    InitChart();
+    showChart.value = true
     console.log("dashboard init");
 }
 defineExpose({
     init: init
 });
+
+const chart = ref({});
+const showChart = ref(false);
+async function InitChart(){
+    const data = await FurPost("get_statistic", {});
+    chart.value = generateGradientStackedAreaChartOptionFromStatistic(data);
+}
+
+use([
+  TitleComponent,
+  ToolboxComponent,
+  TooltipComponent,
+  GridComponent,
+  LegendComponent,
+  LineChart,
+  CanvasRenderer,
+  UniversalTransition
+]);
+provide(THEME_KEY, "dark");
 </script>
 <template>
 <q-card>
@@ -30,7 +65,7 @@ defineExpose({
 
             <q-card style="flex-basis: 21em;" bordered class="my-card dashboard-unit">
                 <q-card-section>
-
+                    <v-chart v-if="showChart" :option="chart" />
                 </q-card-section>
             </q-card>
         </div>

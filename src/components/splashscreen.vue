@@ -16,7 +16,7 @@ onMounted(() => {
 
 <template>
 <div id="slashscreen">
-    <h1 id="title" style="text-align: center;">Furry Language</h1>
+    <h1 id="title" style="text-align: center;">Language</h1>
     <div style="width: fit-content; margin: 2em auto;display: flex;justify-content: space-between;align-items: center; ">
         <img id="server-icon" style="width: 5em;" src="../assets/server.svg"/>
         <p style="font-size: 1.8em;margin: 0 0.8em;">Server loading...</p>
