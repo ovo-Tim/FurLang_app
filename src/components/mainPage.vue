@@ -7,7 +7,7 @@ const splitterModel = ref(20);
 const tab = ref('overview');
 
 const _dashboard = ref();
-function init(){
+function init() {
     console.log("mainPage init");
     _dashboard.value.init();
 }
@@ -23,7 +23,7 @@ defineExpose({
 </script>
 
 <template>
-<q-splitter v-model="splitterModel" id="mainPage">
+    <q-splitter v-model="splitterModel" id="mainPage">
         <template v-slot:before>
             <q-tabs v-model="tab" vertical class="text-teal">
                 <q-tab name="overview" icon="home" label="Overview" />
@@ -34,20 +34,22 @@ defineExpose({
         <template v-slot:after>
             <q-tab-panels v-model="tab" animated swipeable vertical transition-prev="jump-up" transition-next="jump-up">
                 <q-tab-panel name="overview">
-                    <dashboard ref="_dashboard"/>
+                    <dashboard ref="_dashboard" />
                 </q-tab-panel>
                 <q-tab-panel name="server">
                     <h3>Server log</h3>
-                    <q-input standout readonly type="textarea" rounded style="width: 95%; margin: 0 auto;" v-model="sharedVars.server_msg" autogrow/>
+                    <q-input standout readonly type="textarea" rounded style="width: 95%; margin: 0 auto;"
+                        v-model="sharedVars.server_msg" autogrow />
                     <h3>Config</h3>
-                    <q-input standout readonly type="textarea" rounded style="width: 95%; margin: 0 auto;" v-model="text_conf" autogrow/>
+                    <q-input standout readonly type="textarea" rounded style="width: 95%; margin: 0 auto;"
+                        v-model="text_conf" autogrow />
                 </q-tab-panel>
                 <q-tab-panel name="query">
-                    <query/>
+                    <query />
                 </q-tab-panel>
             </q-tab-panels>
         </template>
-</q-splitter>
+    </q-splitter>
 </template>
 
 <style lang="scss">
