@@ -36,6 +36,11 @@ async function search(word: string){
     introductin_html.value = await FurPost("query_dicts", infos.value.word);
 }
 
+watch (notes, (_) => {
+    if (notes.value[notes.value.length - 1] != "") {
+        update_notes();
+    }
+})
 function update_notes(){
     console.log("Updating ", notes.value);
 
