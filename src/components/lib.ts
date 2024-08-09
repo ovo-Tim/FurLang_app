@@ -55,8 +55,6 @@ function get_state(){
             if (msg.stdout.includes('Start service')){
                 sharedVars.server_inited = true;
             }else if (msg.exit_code != -1){
-                console.log(msg.exit_code);
-
                 sharedVars.server_inited = false;
                 clearInterval(interval);
             }
@@ -88,7 +86,7 @@ export async function FurPost(type: string, data: any){
 
         return res;
     }catch(e){
-        console.log("Post error: ", e);
+        console.log(`Post {type: ${type}, data: ${data}} error: `, e);
         return e;
     }
 }

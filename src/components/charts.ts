@@ -36,7 +36,7 @@ export function generateGradientStackedAreaChartOptionFromStatistic(data:Statist
     return {
       color: colors,
       title: {
-        text: 'Gradient Stacked Area Chart'
+        text: 'Learning statistics'
       },
       tooltip: {
         trigger: 'axis',

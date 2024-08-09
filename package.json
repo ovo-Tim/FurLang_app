@@ -18,8 +18,7 @@
     "axios": "^1.7.2",
     "echarts": "^5.5.1",
     "quasar": "^2.16.6",
-    "vue": "^3.3.4",
-    "vue-echarts": "^6.7.3"
+    "vue": "^3.3.4"
   },
   "devDependencies": {
     "@quasar/vite-plugin": "^1.7.0",

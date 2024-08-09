@@ -1,5 +1,5 @@
 <script setup>
-import { provide, ref, onMounted     } from 'vue';
+import { provide, ref, onMounted } from 'vue';
 import { FurPost, sharedVars } from './lib';
 import { use } from "echarts/core";
 import {
@@ -13,25 +13,32 @@ import { LineChart } from 'echarts/charts';
 import { UniversalTransition } from 'echarts/features';
 import { CanvasRenderer } from 'echarts/renderers';
 import { generateGradientStackedAreaChartOptionFromStatistic } from './charts';
-import VChart, { THEME_KEY } from "vue-echarts";
+import * as echarts from 'echarts';
 
 async function init(){
     const res = await FurPost("learned_count", {});
     sharedVars.learningInfo.learned = res[0];
     sharedVars.learningInfo.collocted = res[1];
     InitChart();
-    showChart.value = true
     console.log("dashboard init");
 }
 defineExpose({
     init: init
 });
 
-const chart = ref({});
-const showChart = ref(false);
 async function InitChart(){
     const data = await FurPost("get_statistic", {});
-    chart.value = generateGradientStackedAreaChartOptionFromStatistic(data);
+    const chartOption = generateGradientStackedAreaChartOptionFromStatistic(data);
+    const chartdom = document.getElementById('chart');
+    const chart = echarts.init(chartdom);
+    chart.setOption(chartOption);
+
+    const resizeObserver = new ResizeObserver(entries => {
+        console.log("resize");
+
+        chart.resize();
+    });
+    resizeObserver.observe(chartdom);
 }
 
 use([
@@ -44,33 +51,35 @@ use([
   CanvasRenderer,
   UniversalTransition
 ]);
-provide(THEME_KEY, "dark");
+
+
 </script>
 <template>
 <q-card>
     <q-card-section>
         <div id="dashboard-container">
             <q-card bordered class="dashboard-unit">
-                <q-card-section>
-                    <div class="db-text">{{ sharedVars.learningInfo.learned }}</div>
-                    <p style="text-align: center; margin: 0;">Learned vocabulary</p>
+                <q-card-section class="text-parent">
+                    <div>
+                        <div class="db-text">{{ sharedVars.learningInfo.learned }}</div>
+                        <p style="text-align: center; margin: 0;">Learned vocabulary</p>
+                    </div>
+
                 </q-card-section>
             </q-card>
             <q-card bordered class="my-card dashboard-unit">
-                <q-card-section>
-                    <div class="db-text">{{ sharedVars.learningInfo.collocted }}</div>
-                    <p style="text-align: center; margin: 0;">Collocted vocabulary</p>
-                </q-card-section>
-            </q-card>
-
-            <q-card style="flex-basis: 21em;" bordered class="my-card dashboard-unit">
-                <q-card-section>
-                    <v-chart v-if="showChart" :option="chart" />
+                <q-card-section class="text-parent">
+                    <div>
+                        <div class="db-text">{{ sharedVars.learningInfo.collocted }}</div>
+                        <p style="text-align: center; margin: 0;">Collocted vocabulary</p>
+                    </div>
                 </q-card-section>
             </q-card>
         </div>
+        <div id="chart" class="my-card" style="height: 35em;"></div>
     </q-card-section>
 </q-card>
+<q-btn push color="grey" text-color="white" icon="refresh" style="float: right;" @click="init()"/>
 </template>
 <style lang="scss">
 #dashboard-container{
@@ -85,6 +94,12 @@ provide(THEME_KEY, "dark");
 .db-text{
     color: $cyan-6;
     text-align: center;
-    font-size: 1.8rem;
+    font-size: 2.5rem;
+}
+.text-parent{
+    display: flex;
+    align-items: center;
+    height: 100%;
+    justify-content: center;
 }
 </style>
