@@ -1,0 +1,65 @@
+name: App Build
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release Tag'
+        required: true
+        type: string
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Release
+        run: |
+          gh release create ${{ github.event.inputs.release_tag }} --title "Release ${{ github.event.inputs.release_tag }}" \
+          --notes "Action auto release" --draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+    build:
+        runs-on: ${{ matrix.os }}
+        strategy:
+          matrix:
+            os: [ubuntu-latest, windows-latest, macos-latest]
+        permissions:
+          contents: write
+        needs: create
+
+        steps:
+          # Check-out repository
+          - uses: actions/checkout@v4
+
+          - name: Download server
+            run: |
+              cd src-tauri
+              python download_server.py
+
+          - name: Setup pnpm
+            uses: pnpm/action-setup@v4.0.0
+
+          - name: Install Dependencies
+            run: |
+              pnpm install
+
+          - name: Build
+            run: |
+              pnpm tauri build
+
+          - name: tree
+            continue-on-error: true
+            run: |
+              tree
+
+          - name: Release
+            run: |
+              gh release upload ${{ github.event.inputs.release_tag }} src-tauri/target/release/bundle/deb/*.deb
+              gh release upload ${{ github.event.inputs.release_tag }} src-tauri/target/release/bundle/rpm/*.rpm
+              gh release upload ${{ github.event.inputs.release_tag }} src-tauri/target/release/bundle/appimage/*.AppImage
+            env:
+              GH_TOKEN: ${{ github.token }}
+
