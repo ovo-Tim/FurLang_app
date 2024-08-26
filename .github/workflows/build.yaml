@@ -38,6 +38,10 @@ jobs:
           with:
             python-version: 3.12
 
+        - name: Avoid gh API error
+          if: ${{ matrix.os == 'macos-latest' }}
+          run: sleep 30s
+
         - name: Download server
           run: |
             cd src-tauri
