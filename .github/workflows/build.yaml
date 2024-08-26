@@ -57,6 +57,11 @@ jobs:
           run: |
             pnpm install
 
+        - name: Install GTK for linux
+          if: ${{ matrix.os == 'ubuntu-latest' }}
+          run: |
+            sudo apt install libgtk-3-dev
+
         - name: Build
           run: |
             pnpm tauri build
