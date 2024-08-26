@@ -35,9 +35,6 @@ importers:
       vue:
         specifier: ^3.3.4
         version: 3.4.36(typescript@5.5.4)
-      vue-echarts:
-        specifier: ^6.7.3
-        version: 6.7.3(@vue/runtime-core@3.4.36)(echarts@5.5.1)(vue@3.4.36(typescript@5.5.4))
     devDependencies:
       '@quasar/vite-plugin':
         specifier: ^1.7.0
@@ -701,9 +698,6 @@ packages:
     resolution: {integrity: sha512-hOS089on8RduqdbhvQ5Z37A0ESjsqz6qnRcffsMU3495FuTdqSm+7bhJ29JvIOsBDEEnan5DPu9t3To9VRlMzA==}
     engines: {node: '>=8.10.0'}
 
-  resize-detector@0.3.0:
-    resolution: {integrity: sha512-R/tCuvuOHQ8o2boRP6vgx8hXCCy87H1eY9V5imBYeVNyNVpuL9ciReSccLj2gDcax9+2weXy3bc8Vv+NRXeEvQ==}
-
   rollup@4.20.0:
     resolution: {integrity: sha512-6rbWBChcnSGzIlXeIdNIZTopKYad8ZG8ajhl78lGRLsI2rX8IkaotQhVas2Ma+GPxJav19wrSzvRvuiv0YKzWw==}
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
@@ -784,30 +778,6 @@ packages:
 
   vscode-uri@3.0.8:
     resolution: {integrity: sha512-AyFQ0EVmsOZOlAnxoFOGOq1SQDWAB7C6aqMGS23svWAllfOaxbuFvcT8D1i8z3Gyn8fraVeZNNmN6e9bxxXkKw==}
-
-  vue-demi@0.13.11:
-    resolution: {integrity: sha512-IR8HoEEGM65YY3ZJYAjMlKygDQn25D5ajNFNoKh9RSDMQtlzCxtfQjdQgv9jjK+m3377SsJXY8ysq8kLCZL25A==}
-    engines: {node: '>=12'}
-    hasBin: true
-    peerDependencies:
-      '@vue/composition-api': ^1.0.0-rc.1
-      vue: ^3.0.0-0 || ^2.6.0
-    peerDependenciesMeta:
-      '@vue/composition-api':
-        optional: true
-
-  vue-echarts@6.7.3:
-    resolution: {integrity: sha512-vXLKpALFjbPphW9IfQPOVfb1KjGZ/f8qa/FZHi9lZIWzAnQC1DgnmEK3pJgEkyo6EP7UnX6Bv/V3Ke7p+qCNXA==}
-    peerDependencies:
-      '@vue/composition-api': ^1.0.5
-      '@vue/runtime-core': ^3.0.0
-      echarts: ^5.4.1
-      vue: ^2.6.12 || ^3.1.1
-    peerDependenciesMeta:
-      '@vue/composition-api':
-        optional: true
-      '@vue/runtime-core':
-        optional: true
 
   vue-tsc@2.0.29:
     resolution: {integrity: sha512-MHhsfyxO3mYShZCGYNziSbc63x7cQ5g9kvijV7dRe1TTXBRLxXyL0FnXWpUF1xII2mJ86mwYpYsUmMwkmerq7Q==}
@@ -1349,8 +1319,6 @@ snapshots:
     dependencies:
       picomatch: 2.3.1
 
-  resize-detector@0.3.0: {}
-
   rollup@4.20.0:
     dependencies:
       '@types/estree': 1.0.5
@@ -1413,19 +1381,6 @@ snapshots:
       sass: 1.77.8
 
   vscode-uri@3.0.8: {}
-
-  vue-demi@0.13.11(vue@3.4.36(typescript@5.5.4)):
-    dependencies:
-      vue: 3.4.36(typescript@5.5.4)
-
-  vue-echarts@6.7.3(@vue/runtime-core@3.4.36)(echarts@5.5.1)(vue@3.4.36(typescript@5.5.4)):
-    dependencies:
-      echarts: 5.5.1
-      resize-detector: 0.3.0
-      vue: 3.4.36(typescript@5.5.4)
-      vue-demi: 0.13.11(vue@3.4.36(typescript@5.5.4))
-    optionalDependencies:
-      '@vue/runtime-core': 3.4.36
 
   vue-tsc@2.0.29(typescript@5.5.4):
     dependencies:
