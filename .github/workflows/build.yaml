@@ -37,6 +37,7 @@ jobs:
         - name: Download server
           run: |
             cd src-tauri
+            pip install requests
             python download_server.py
 
         - name: Setup pnpm
