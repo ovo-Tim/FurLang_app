@@ -40,7 +40,7 @@ jobs:
 
         - name: Avoid gh API error
           if: ${{ matrix.os == 'macos-latest' }}
-          run: sleep 30
+          run: sleep 100
 
         - name: Download server
           run: |
