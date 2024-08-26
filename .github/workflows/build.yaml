@@ -21,45 +21,45 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-    build:
-        runs-on: ${{ matrix.os }}
-        strategy:
-          matrix:
-            os: [ubuntu-latest, windows-latest, macos-latest]
-        permissions:
-          contents: write
-        needs: create
+  build:
+      runs-on: ${{ matrix.os }}
+      strategy:
+        matrix:
+          os: [ubuntu-latest, windows-latest, macos-latest]
+      permissions:
+        contents: write
+      needs: create
 
-        steps:
-          # Check-out repository
-          - uses: actions/checkout@v4
+      steps:
+        # Check-out repository
+        - uses: actions/checkout@v4
 
-          - name: Download server
-            run: |
-              cd src-tauri
-              python download_server.py
+        - name: Download server
+          run: |
+            cd src-tauri
+            python download_server.py
 
-          - name: Setup pnpm
-            uses: pnpm/action-setup@v4.0.0
+        - name: Setup pnpm
+          uses: pnpm/action-setup@v4.0.0
 
-          - name: Install Dependencies
-            run: |
-              pnpm install
+        - name: Install Dependencies
+          run: |
+            pnpm install
 
-          - name: Build
-            run: |
-              pnpm tauri build
+        - name: Build
+          run: |
+            pnpm tauri build
 
-          - name: tree
-            continue-on-error: true
-            run: |
-              tree
+        - name: tree
+          continue-on-error: true
+          run: |
+            tree
 
-          - name: Release
-            run: |
-              gh release upload ${{ github.event.inputs.release_tag }} src-tauri/target/release/bundle/deb/*.deb
-              gh release upload ${{ github.event.inputs.release_tag }} src-tauri/target/release/bundle/rpm/*.rpm
-              gh release upload ${{ github.event.inputs.release_tag }} src-tauri/target/release/bundle/appimage/*.AppImage
-            env:
-              GH_TOKEN: ${{ github.token }}
+        - name: Release
+          run: |
+            gh release upload ${{ github.event.inputs.release_tag }} src-tauri/target/release/bundle/deb/*.deb
+            gh release upload ${{ github.event.inputs.release_tag }} src-tauri/target/release/bundle/rpm/*.rpm
+            gh release upload ${{ github.event.inputs.release_tag }} src-tauri/target/release/bundle/appimage/*.AppImage
+          env:
+            GH_TOKEN: ${{ github.token }}
 

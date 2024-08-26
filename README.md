@@ -16,3 +16,7 @@ You can know your learning progress clearly in our application:
 ![Overview your learning process](./screenshot/dashboard.png)
 Also you can query your learned words:
 ![Query your learned words](./screenshot/query.png)
+
+## Plan
+- View PDF file on the app.
+- View videoes on the app.
