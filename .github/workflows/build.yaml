@@ -81,11 +81,26 @@ jobs:
           run: |
             tree
 
-        - name: Release
+        - name: Release Linux
+          if: ${{ matrix.os == 'ubuntu-latest' }}
           run: |
             gh release upload ${{ github.event.inputs.release_tag }} src-tauri/target/release/bundle/deb/*.deb
             gh release upload ${{ github.event.inputs.release_tag }} src-tauri/target/release/bundle/rpm/*.rpm
             gh release upload ${{ github.event.inputs.release_tag }} src-tauri/target/release/bundle/appimage/*.AppImage
+          env:
+            GH_TOKEN: ${{ github.token }}
+
+        - name: Release Windows
+          if: ${{ matrix.os == 'windows-latest' }}
+          run: |
+            gh release upload ${{ github.event.inputs.release_tag }} src-tauri/target/release/bundle/msi/*.msi
+          env:
+            GH_TOKEN: ${{ github.token }}
+
+        - name: Release macOS
+          if: ${{ matrix.os == 'macos-latest' }}
+          run: |
+            gh release upload ${{ github.event.inputs.release_tag }} src-tauri/target/release/bundle/dmg/*.dmg
           env:
             GH_TOKEN: ${{ github.token }}
 
