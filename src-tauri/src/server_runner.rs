@@ -46,14 +46,14 @@ impl Cmd {
                 return;
             }
             if to_kill.load(Ordering::Relaxed){
-                let pid = child.lock().await.id().unwrap() as u32;
+                let pid = child.lock().await.id().unwrap() as i32;
                 let mut done = false;
                 println!("Killing by send SIGKILL to {}", pid);
                 #[cfg(windows)]
                 {
                     use windows::Win32::System::Console::{GenerateConsoleCtrlEvent, CTRL_C_EVENT};
                     unsafe {
-                        if let Ok(_) = GenerateConsoleCtrlEvent(CTRL_C_EVENT, pid){
+                        if let Ok(_) = GenerateConsoleCtrlEvent(CTRL_C_EVENT, pid as u32){
                             done = true;
                         }
                     }
