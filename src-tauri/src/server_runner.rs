@@ -46,7 +46,7 @@ impl Cmd {
                 return;
             }
             if to_kill.load(Ordering::Relaxed){
-                let pid = child.lock().await.id().unwrap() as i32;
+                let pid = child.lock().await.id().unwrap() as u32;
                 let mut done = false;
                 println!("Killing by send SIGKILL to {}", pid);
                 #[cfg(windows)]
