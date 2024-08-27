@@ -17,6 +17,13 @@ You can know your learning progress clearly in our application:
 Also you can query your learned words:
 ![Query your learned words](./screenshot/query.png)
 
+## Installation
+- Install the [FurLang-app](https://github.com/ovo-Tim/FurLang_app), download [here](https://github.com/ovo-Tim/FurLang_app/releases)
+- Install the [FurLang-browser-plugin](https://github.com/ovo-Tim/FurLang_browser_plugin) to your browser,
+    download zip file [here](https://github.com/ovo-Tim/FurLang_browser_plugin/releases).
+    [Install guide](https://ui.vision/howto/install-chrome-extension-from-file).
+- Open the FurLang App and enjoy learning!
+
 ## Plan
 - View PDF file on the app.
 - View videoes on the app.
