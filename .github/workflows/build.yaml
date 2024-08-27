@@ -92,8 +92,10 @@ jobs:
 
         - name: Release Windows
           if: ${{ matrix.os == 'windows-latest' }}
+          shell: pwsh
           run: |
-            gh release upload ${{ github.event.inputs.release_tag }} src-tauri/target/release/bundle/msi/*.msi
+            gh release upload ${{ github.event.inputs.release_tag }} src-tauri\target\release\bundle\msi\*.msi
+            gh release upload ${{ github.event.inputs.release_tag }} src-tauri\target\release\bundle\nsis\*.exe
           env:
             GH_TOKEN: ${{ github.token }}
 
